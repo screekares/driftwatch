@@ -70,3 +70,29 @@ func TestLoad_InvalidJSON(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "parsing")
 }
+
+func TestLoad_EmptyProfiles(t *testing.T) {
+	path := writeTemp(t, `{
+		"version": "1",
+		"profiles": {}
+	}`)
+
+	cfg, err := config.Load(path)
+	require.NoError(t, err)
+	assert.Empty(t, cfg.Profiles)
+}
+
+func TestLoad_MultipleProfiles(t *testing.T) {
+	path := writeTemp(t, `{
+		"version": "1",
+		"profiles": {
+			"prod": {"name": "prod", "provider": "aws", "region": "us-east-1"},
+			"staging": {"name": "staging", "provider": "aws", "region": "eu-west-1"}
+		}
+	}`)
+
+	cfg, err := config.Load(path)
+	require.NoError(t, err)
+	assert.Len(t, cfg.Profiles, 2)
+	assert.Equal(t, "eu-west-1", cfg.Profiles["staging"].Region)
+}
