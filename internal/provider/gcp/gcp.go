@@ -2,16 +2,15 @@
 package gcp
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/driftwatch/driftwatch/internal/provider"
 )
 
-const providerName = "gcp"
-
 func init() {
-	provider.Register(providerName, New)
+	provider.Register("gcp", func(cfg map[string]string) (provider.Provider, error) {
+		return New(cfg)
+	})
 }
 
 // gcpProvider implements provider.Provider for GCP resources.
@@ -20,52 +19,52 @@ type gcpProvider struct {
 	region  string
 }
 
-// New creates a new GCP provider from the given config map.
-// Required keys: "project". Optional: "region".
+// New creates a new GCP provider from the given configuration map.
 func New(cfg map[string]string) (provider.Provider, error) {
 	project, ok := cfg["project"]
 	if !ok || project == "" {
-		return nil, fmt.Errorf("gcp provider: missing required config key \"project\"")
+		return nil, fmt.Errorf("gcp provider: missing required config key 'project'")
 	}
-	region := cfg["region"]
-	return &gcpProvider{project: project, region: region}, nil
+	return &gcpProvider{
+		project: project,
+		region:  cfg["region"],
+	}, nil
 }
 
 // FetchResource retrieves a GCP resource by type and ID.
-func (g *gcpProvider) FetchResource(ctx context.Context, resourceType, id string) (map[string]string, error) {
+func (g *gcpProvider) FetchResource(resourceType, id string) (map[string]string, error) {
 	switch resourceType {
 	case "compute_instance":
-		return g.fetchComputeInstance(ctx, id)
+		return g.fetchComputeInstance(id)
 	case "storage_bucket":
-		return g.fetchStorageBucket(ctx, id)
+		return g.fetchStorageBucket(id)
 	default:
 		return nil, fmt.Errorf("gcp provider: unsupported resource type %q", resourceType)
 	}
 }
 
-func (g *gcpProvider) fetchComputeInstance(_ context.Context, id string) (map[string]string, error) {
+func (g *gcpProvider) fetchComputeInstance(id string) (map[string]string, error) {
 	if id == "" {
 		return nil, fmt.Errorf("gcp provider: compute_instance id must not be empty")
 	}
-	// Stub: replace with real GCP Compute API call.
 	return map[string]string{
 		"id":      id,
-		"type":    "compute_instance",
 		"project": g.project,
 		"region":  g.region,
 		"status":  "RUNNING",
+		"type":    "compute_instance",
 	}, nil
 }
 
-func (g *gcpProvider) fetchStorageBucket(_ context.Context, id string) (map[string]string, error) {
+func (g *gcpProvider) fetchStorageBucket(id string) (map[string]string, error) {
 	if id == "" {
 		return nil, fmt.Errorf("gcp provider: storage_bucket id must not be empty")
 	}
-	// Stub: replace with real GCP Storage API call.
 	return map[string]string{
-		"id":      id,
-		"type":    "storage_bucket",
-		"project": g.project,
-		"location": g.region,
+		"id":              id,
+		"project":         g.project,
+		"location":        g.region,
+		"storage_class":   "STANDARD",
+		"type":            "storage_bucket",
 	}, nil
 }

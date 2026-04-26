@@ -1,21 +1,16 @@
-// Package gcp implements the driftwatch provider interface for Google Cloud
-// Platform resources.
+// Package gcp implements the driftwatch provider interface for
+// Google Cloud Platform resources.
 //
-// # Supported resource types
+// Supported resource types:
 //
-//   - compute_instance – GCP Compute Engine VM instances
-//   - storage_bucket   – GCP Cloud Storage buckets
+//   - compute_instance: Represents a GCP Compute Engine VM instance.
+//   - storage_bucket:   Represents a GCP Cloud Storage bucket.
 //
-// # Configuration
+// Configuration keys:
 //
-// The GCP provider is configured via the providers section of the driftwatch
-// configuration file:
+//   - project (required): The GCP project ID.
+//   - region  (optional): The default region for resource lookups.
 //
-//	providers:
-//	  gcp:
-//	    project: my-gcp-project
-//	    region:  us-central1   # optional
-//
-// The "project" key is required. "region" is optional and used as a hint when
-// fetching region-scoped resources.
+// The provider is automatically registered under the name "gcp"
+// via its init() function when the package is imported.
 package gcp
