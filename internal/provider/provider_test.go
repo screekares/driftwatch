@@ -1,51 +1,60 @@
 package provider_test
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/yourorg/driftwatch/internal/provider"
-	_ "github.com/yourorg/driftwatch/internal/provider/mock" // register mock
+	"github.com/example/driftwatch/internal/provider"
+	_ "github.com/example/driftwatch/internal/provider/mock"
 )
 
 func TestNew_KnownProvider(t *testing.T) {
 	p, err := provider.New("mock", nil)
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
-	if p.Name() != "mock" {
-		t.Errorf("expected name \"mock\", got %q", p.Name())
+	if p == nil {
+		t.Fatal("expected non-nil provider")
 	}
 }
 
 func TestNew_UnknownProvider(t *testing.T) {
 	_, err := provider.New("nonexistent", nil)
 	if err == nil {
-		t.Fatal("expected error for unknown provider, got nil")
+		t.Fatal("expected error for unknown provider")
 	}
 }
 
 func TestMockProvider_FetchResource_Found(t *testing.T) {
 	p, _ := provider.New("mock", nil)
-	state, err := p.FetchResource("instance", "web-01")
+	res, err := p.FetchResource("instance", "i-001")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if state["instance_type"] != "t3.micro" {
-		t.Errorf("expected instance_type t3.micro, got %v", state["instance_type"])
+	if res == nil {
+		t.Fatal("expected non-nil resource")
+	}
+	if res.ID != "i-001" {
+		t.Errorf("expected ID i-001, got %s", res.ID)
 	}
 }
 
 func TestMockProvider_FetchResource_NotFound(t *testing.T) {
 	p, _ := provider.New("mock", nil)
-	_, err := p.FetchResource("instance", "does-not-exist")
+	_, err := p.FetchResource("instance", "i-999")
 	if err == nil {
-		t.Fatal("expected error for missing resource, got nil")
+		t.Fatal("expected error for missing resource")
 	}
 }
 
 func TestRegister_Duplicate(t *testing.T) {
-	// Re-registering should silently overwrite — no panic expected.
-	provider.Register("mock", func(cfg map[string]string) (provider.Provider, error) {
-		return nil, nil
-	})
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic on duplicate registration")
+		}
+	}()
+	factory := func(_ map[string]string) (provider.Provider, error) {
+		return nil, errors.New("stub")
+	}
+	provider.Register("mock", factory)
 }

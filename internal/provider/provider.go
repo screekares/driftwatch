@@ -1,68 +1,67 @@
-// Package provider defines the Provider interface and a registry for
-// named provider implementations.
+// Package provider defines the interface and registry for cloud providers.
 package provider
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"sync"
 )
 
-// ErrNotFound is returned when a resource cannot be located by the provider.
-var ErrNotFound = errors.New("resource not found")
-
-// Provider fetches live resource state from an infrastructure backend.
-type Provider interface {
-	FetchResource(ctx context.Context, id string) (map[string]string, error)
+// Resource represents a single cloud resource fetched from a provider.
+type Resource struct {
+	ID     string            `json:"id"`
+	Type   string            `json:"type"`
+	Region string            `json:"region,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
+	Attrs  map[string]string `json:"attrs,omitempty"`
 }
 
-// ProviderFunc is a constructor that returns a ready-to-use Provider.
-type ProviderFunc func() (Provider, error)
+// Provider is the interface all cloud provider implementations must satisfy.
+type Provider interface {
+	FetchResource(resourceType, id string) (*Resource, error)
+}
+
+// FactoryFunc constructs a Provider from a config map.
+type FactoryFunc func(cfg map[string]string) (Provider, error)
 
 var (
 	mu       sync.RWMutex
-	registry = map[string]ProviderFunc{}
+	registry = map[string]FactoryFunc{}
 )
 
-// Register adds a named provider constructor to the global registry.
+// Register adds a named provider factory to the global registry.
 // It panics if the same name is registered twice.
-func Register(name string, fn ProviderFunc) {
+func Register(name string, fn FactoryFunc) {
 	mu.Lock()
 	defer mu.Unlock()
-	if _, ok := registry[name]; ok {
-		panic(fmt.Sprintf("provider %q already registered", name))
+	if _, exists := registry[name]; exists {
+		panic(fmt.Sprintf("provider: duplicate registration for %q", name))
 	}
 	registry[name] = fn
 }
 
-// New creates a provider by name. Returns an error for unknown names.
-func New(name string) (Provider, error) {
+// New creates a provider by name using the global registry.
+func New(name string, cfg map[string]string) (Provider, error) {
 	mu.RLock()
 	fn, ok := registry[name]
 	mu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("unknown provider %q (available: %s)", name, availableNames())
+		return nil, fmt.Errorf("provider: unknown provider %q (available: %v)", name, AvailableNames())
 	}
-	return fn()
+	return fn(cfg)
 }
 
-// availableNames returns a sorted, comma-separated list of registered names.
-func availableNames() string {
+// AvailableNames returns a sorted list of registered provider names.
+func AvailableNames() []string {
 	mu.RLock()
 	defer mu.RUnlock()
 	names := make([]string, 0, len(registry))
-	for n := range registry {
-		names = append(names, n)
+	for k := range registry {
+		names = append(names, k)
 	}
 	sort.Strings(names)
-	result := ""
-	for i, n := range names {
-		if i > 0 {
-			result += ", "
-		}
-		result += n
-	}
-	return result
+	return names
 }
+
+// availableNames is kept for backward compatibility within the package.
+func availableNames() []string { return AvailableNames() }
