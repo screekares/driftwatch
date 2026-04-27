@@ -65,3 +65,17 @@ func TestCheck_Missing(t *testing.T) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }
+
+// TestCheck_EmptyDeclared verifies that checking a resource with no declared
+// fields against a live resource that has fields reports drift.
+func TestCheck_EmptyDeclared(t *testing.T) {
+	d := newMockDetector(t)
+	res, err := d.Check(context.Background(), "service-a", map[string]string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// With no declared fields there is nothing to compare, so no drift expected.
+	if res.Status != drift.StatusMatch {
+		t.Errorf("expected StatusMatch for empty declared fields, got %v", res.Status)
+	}
+}
