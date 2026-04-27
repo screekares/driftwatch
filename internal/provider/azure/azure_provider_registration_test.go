@@ -36,3 +36,14 @@ func TestAzureProvider_NewViaRegistry_MissingConfig(t *testing.T) {
 		t.Fatal("expected error for missing config, got nil")
 	}
 }
+
+func TestAzureProvider_NewViaRegistry_MissingResourceGroup(t *testing.T) {
+	// Ensure that omitting resource_group alone also produces an error,
+	// not just a fully empty config map.
+	_, err := provider.New("azure", map[string]string{
+		"subscription_id": "sub-reg-test",
+	})
+	if err == nil {
+		t.Fatal("expected error when resource_group is missing, got nil")
+	}
+}
