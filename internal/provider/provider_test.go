@@ -47,6 +47,16 @@ func TestMockProvider_FetchResource_NotFound(t *testing.T) {
 	}
 }
 
+// TestMockProvider_FetchResource_EmptyID verifies that an empty resource ID
+// returns an error rather than a nil or zero-value resource.
+func TestMockProvider_FetchResource_EmptyID(t *testing.T) {
+	p, _ := provider.New("mock", nil)
+	_, err := p.FetchResource("instance", "")
+	if err == nil {
+		t.Fatal("expected error for empty resource ID")
+	}
+}
+
 func TestRegister_Duplicate(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
