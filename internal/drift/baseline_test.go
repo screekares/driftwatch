@@ -57,8 +57,17 @@ func TestSaveAndLoadBaseline_RoundTrip(t *testing.T) {
 	if loaded.Provider != b.Provider {
 		t.Errorf("provider mismatch: got %s", loaded.Provider)
 	}
+	if loaded.Annotation != b.Annotation {
+		t.Errorf("annotation mismatch: got %q, want %q", loaded.Annotation, b.Annotation)
+	}
 	if len(loaded.Ignored) != len(b.Ignored) {
 		t.Errorf("ignored count mismatch: got %d, want %d", len(loaded.Ignored), len(b.Ignored))
+	}
+	// Verify individual ignored keys survived the round-trip.
+	for key := range b.Ignored {
+		if !loaded.Ignored[key] {
+			t.Errorf("ignored key %q missing after round-trip", key)
+		}
 	}
 }
 
